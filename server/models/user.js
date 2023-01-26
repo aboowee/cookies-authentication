@@ -12,6 +12,8 @@ class Users extends Model {
     super('users');
   }
 
+
+
   /**
    * Compares a password attempt with the previously stored password and salt.
    * @param {string} attempted - The attempted password.
