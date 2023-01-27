@@ -31,6 +31,7 @@ class Model {
    * matching the conditions or is rejected with the the error that occurred during
    * the query.
    */
+
   getAll(options) {
     if (!options) {
       let queryString = `SELECT * FROM ${this.tablename}`;
