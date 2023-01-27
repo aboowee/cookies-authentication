@@ -448,7 +448,7 @@ describe('', function() {
           createSession(requestWithoutCookie, response, function() {
             var hash = requestWithoutCookie.session.hash;
             db.query('UPDATE sessions SET userId = ? WHERE hash = ?', [userId, hash], function(error, result) {
-
+              //the session table has a userId attached to a hash
               var secondResponse = httpMocks.createResponse();
               var requestWithCookies = httpMocks.createRequest();
               requestWithCookies.cookies.shortlyid = hash;
@@ -481,7 +481,7 @@ describe('', function() {
     });
   });
 
-  xdescribe('Sessions and cookies', function() {
+  describe('Sessions and cookies', function() {
     var requestWithSession;
     var cookieJar;
 
@@ -504,7 +504,7 @@ describe('', function() {
       requestWithSession = request.defaults({ jar: cookieJar });
       done();
     });
-
+    // above is for completing the auth.js
     it('saves a new session when the server receives a request', function(done) {
       requestWithSession('http://127.0.0.1:4568/', function(err, res, body) {
         if (err) { return done(err); }
@@ -537,10 +537,17 @@ describe('', function() {
           SELECT users.username FROM users, sessions
           WHERE sessions.hash = ? AND users.id = sessions.userId
         `;
+        //var queryString2 = `SELECT * FROM sessions WHERE hash = ?`;
 
+        //var queryString3 = `SELECT * FROM users`;
+
+        //console.log('cookie value line 541: ', cookieValue);//this works
         db.query(queryString, cookieValue, function(error, users) {
+        //db.query(queryString3, function(error, users) {
           if (error) { return done(error); }
+          //console.log('the data from sessions: ', users);
           var user = users[0];
+          console.log('the use line 544 is: ', user); //this is undefined
           expect(user.username).to.equal('Vivian');
           done();
         });

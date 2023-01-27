@@ -17,25 +17,9 @@ const parseCookies = (req, res, next) => {
       cookieResponse[pair[0]] = pair[1];
     });
 
-    // const separatedIDAndURI = separatedCookie.split('=');
-    // console.log('Separated Junk', separatedIDAndURI);
-    console.log(cookieResponse);
     req.cookies = cookieResponse;
   }
-
-
   next();
-
-  //Get info from req.headers.cookie
-  //Create object with all cookies (id: uri)
-  //res.cookies = createdObj
-
-
-
-  //Get cookies
-  //Parse to object
-  //req.body.Cookie = JSON.parse(req.cookies)
-  //res.send(req.body)
 };
 
 //
