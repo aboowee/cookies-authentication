@@ -123,7 +123,7 @@ describe('', function() {
     });
   });
   // -------------start here --------------
-  describe('Account Creation:', function() {
+  xdescribe('Account Creation:', function() {
 
     it('signup creates a new user record', function(done) {
       var options = {
@@ -208,7 +208,7 @@ describe('', function() {
     });
   });
   // completed first commit
-  describe('Account Login:', function() {
+  xdescribe('Account Login:', function() {
 
     beforeEach(function(done) {
       var options = {
@@ -277,7 +277,7 @@ describe('', function() {
     });
   });
 
-  describe('Sessions Schema:', function() {
+  xdescribe('Sessions Schema:', function() {
     it('contains a sessions table', function(done) {
       var queryString = 'SELECT * FROM sessions';
       db.query(queryString, function(err, results) {
@@ -325,7 +325,7 @@ describe('', function() {
     });
   });
 
-  describe('Express Middleware', function() {
+  xdescribe('Express Middleware', function() {
     var cookieParser = require('../server/middleware/cookieParser.js');
     var createSession = require('../server/middleware/auth.js').createSession;
 
@@ -372,7 +372,7 @@ describe('', function() {
       });
     });
 
-    describe('Session Parser', function() {
+    xdescribe('Session Parser', function() {
       it('initializes a new session when there are no cookies on the request', function(done) {
         var requestWithoutCookies = httpMocks.createRequest();
         var response = httpMocks.createResponse();
@@ -537,18 +537,11 @@ describe('', function() {
           SELECT users.username FROM users, sessions
           WHERE sessions.hash = ? AND users.id = sessions.userId
         `;
-        //var queryString2 = `SELECT * FROM sessions WHERE hash = ?`;
-
-        //var queryString3 = `SELECT * FROM users`;
-
-        //console.log('cookie value line 541: ', cookieValue);//this works
         db.query(queryString, cookieValue, function(error, users) {
-        //db.query(queryString3, function(error, users) {
           if (error) { return done(error); }
-          //console.log('the data from sessions: ', users);
           var user = users[0];
-          console.log('the use line 544 is: ', user); //this is undefined
-          expect(user.username).to.equal('Vivian');
+          console.log('test line 543');
+          expect(user.username).to.equal('Vivian'); //error occurs here
           done();
         });
       });

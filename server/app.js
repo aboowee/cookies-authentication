@@ -80,34 +80,29 @@ app.post('/links',
 /************************************************************/
 
 /* Add routes to your Express server to process incoming POST requests. These routes should enable a user to register for a new account and for users to log in to your application. Take a look at the login.ejs and signup.ejs templates in the views directory to determine which routes you need to add. */
+
 app.post('/signup', (req, res, next) => {
+
   models.Users.create(req.body)
     .then((result)=> {
-    // console.log('User Created  ', result);
-      res.redirect(201, '/');
+      models.Users.getAll()
+        .then((result) => {
+          Auth.createSession(req, res, res.redirect.bind(res, 201, '/'));
+        });
     })
     .catch((err) => {
-      //console.log('User NOT Created    ', err);
-      //redirect to /signup
+      console.log('User NOT Created    ', err);
       res.redirect(302, '/signup');
     });
+
 });
 
 
 app.post('/login', (req, res, next) => {
-//Run compare. Invoke on req.body.attempted
-//Get password and salt from database
-//.then (**LOGIN**)
-//.catch(redirect to login)
-
-  //{attempted:req.body.attempted, password: Invoke createpassword, salt: create salt}
 
   models.Users.get({username: req.body.username})
     .then((result)=> {
       if (result === undefined) {
-        //
-        console.log('User does not exist ');
-        //redirect to /signup
         res.redirect(302, '/login');
       } else {
         if (models.Users.compare(req.body.password, result.password, result.salt)) {
@@ -121,7 +116,6 @@ app.post('/login', (req, res, next) => {
     })
     .catch((err) => {
       console.log('User does not exist    ', err);
-      //redirect to /signup
       res.redirect(302, '/login');
     });
 });
