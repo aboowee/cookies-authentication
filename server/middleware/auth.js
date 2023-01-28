@@ -20,11 +20,14 @@ module.exports.createSession = (req, res, next) => {
             req.session = {hash: data.hash};
             res.cookie('shortlyid', data.hash);
             //TEST SUITE
-            models.Users.get({username: req.body.username}) //vivian got no home here somehow
+            models.Users.get({username: req.body.username})
               .then((data) => {
                 if ((data !== undefined) && data.id) { //if username exists
                   models.Sessions.update({hash: req.session.hash}, {userId: data.id}) //update the sessions table
                     .then ((data)=>{
+                      //now that the sessions table and users table have a matching username id, the user is def logged in
+                      //now we should put that username in req.session.user = req.body.username
+                      req.session.user = true;
                       next();
                     })
                     .catch((error) => {

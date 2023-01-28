@@ -7,6 +7,27 @@ const Auth = require('./middleware/auth');
 const models = require('./models');
 const app = express();
 
+
+/******************************************************/
+//        HELPER FUNCTION FOR VERIFYSESSION
+/******************************************************/
+
+const verifySession = function (req, res, next) {
+  console.log('This is req: ', req);
+  console.log('This is res: ', res);
+  console.log('This is next: ', next);
+  if (models.Sessions.isLoggedIn({user: req.session.user})) {
+    next();
+  } else {
+    console.log('about to redirect');
+    res.redirect(302, '/login');
+  }
+};
+
+/******************************************************/
+//          Initialization of Express
+/******************************************************/
+
 app.set('views', `${__dirname}/views`);
 app.set('view engine', 'ejs');
 app.use(partials());
@@ -20,23 +41,25 @@ app.use(Auth.createSession);
 //https://stackoverflow.com/questions/31928417/chaining-multiple-pieces-of-middleware-for-specific-route-in-expressjs
 app.get('/',
   (req, res) => {
-    res.render('index');
+    verifySession(req, res, ()=>{ res.render('index'); });
   });
 
 app.get('/create',
   (req, res) => {
-    res.render('index');
+    verifySession(req, res, ()=>{ res.render('index'); });
   });
 
 app.get('/links',
   (req, res, next) => {
-    models.Links.getAll()
-      .then(links => {
-        res.status(200).send(links);
-      })
-      .error(error => {
-        res.status(500).send(error);
-      });
+    verifySession(req, res, ()=>{
+      models.Links.getAll()
+        .then(links => {
+          res.status(200).send(links);
+        })
+        .error(error => {
+          res.status(500).send(error);
+        });
+    });
   });
 
 app.post('/links',
@@ -99,6 +122,7 @@ app.post('/signup', (req, res, next) => {
 
 
 app.post('/login', (req, res, next) => {
+  console.log(' at app.post/login');
 
   models.Users.get({username: req.body.username})
     .then((result)=> {
@@ -117,6 +141,22 @@ app.post('/login', (req, res, next) => {
     .catch((err) => {
       console.log('User does not exist    ', err);
       res.redirect(302, '/login');
+    });
+});
+
+
+app.get('/logout', (req, res, next) => {
+
+  res.cookie('shortlyid', null);
+  models.Sessions.delete({hash: req.session.hash})
+    .then((data) => {
+      req.session.hash = null;
+      res.redirect(201, '/');
+    })
+
+    .catch((err) => {
+      console.log('Can\'t log out    ', err);
+      res.redirect(302, '/');
     });
 });
 
