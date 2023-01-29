@@ -7,6 +7,27 @@ const Auth = require('./middleware/auth');
 const models = require('./models');
 const app = express();
 
+
+/******************************************************/
+//        HELPER FUNCTION FOR VERIFYSESSION
+/******************************************************/
+
+const verifySession = function (req, res, next) {
+  console.log('This is req: ', req);
+  console.log('This is res: ', res);
+  console.log('This is next: ', next);
+  if (models.Sessions.isLoggedIn({user: req.session.user})) {
+    next();
+  } else {
+    console.log('about to redirect');
+    res.redirect(302, '/login');
+  }
+};
+
+/******************************************************/
+//          Initialization of Express
+/******************************************************/
+
 app.set('views', `${__dirname}/views`);
 app.set('view engine', 'ejs');
 app.use(partials());
@@ -20,23 +41,25 @@ app.use(Auth.createSession);
 //https://stackoverflow.com/questions/31928417/chaining-multiple-pieces-of-middleware-for-specific-route-in-expressjs
 app.get('/',
   (req, res) => {
-    res.render('index');
+    verifySession(req, res, ()=>{ res.render('index'); });
   });
 
 app.get('/create',
   (req, res) => {
-    res.render('index');
+    verifySession(req, res, ()=>{ res.render('index'); });
   });
 
 app.get('/links',
   (req, res, next) => {
-    models.Links.getAll()
-      .then(links => {
-        res.status(200).send(links);
-      })
-      .error(error => {
-        res.status(500).send(error);
-      });
+    verifySession(req, res, ()=>{
+      models.Links.getAll()
+        .then(links => {
+          res.status(200).send(links);
+        })
+        .error(error => {
+          res.status(500).send(error);
+        });
+    });
   });
 
 app.post('/links',
@@ -80,34 +103,30 @@ app.post('/links',
 /************************************************************/
 
 /* Add routes to your Express server to process incoming POST requests. These routes should enable a user to register for a new account and for users to log in to your application. Take a look at the login.ejs and signup.ejs templates in the views directory to determine which routes you need to add. */
+
 app.post('/signup', (req, res, next) => {
+
   models.Users.create(req.body)
     .then((result)=> {
-    // console.log('User Created  ', result);
-      res.redirect(201, '/');
+      models.Users.getAll()
+        .then((result) => {
+          Auth.createSession(req, res, res.redirect.bind(res, 201, '/'));
+        });
     })
     .catch((err) => {
-      //console.log('User NOT Created    ', err);
-      //redirect to /signup
+      console.log('User NOT Created    ', err);
       res.redirect(302, '/signup');
     });
+
 });
 
 
 app.post('/login', (req, res, next) => {
-//Run compare. Invoke on req.body.attempted
-//Get password and salt from database
-//.then (**LOGIN**)
-//.catch(redirect to login)
-
-  //{attempted:req.body.attempted, password: Invoke createpassword, salt: create salt}
+  console.log(' at app.post/login');
 
   models.Users.get({username: req.body.username})
     .then((result)=> {
       if (result === undefined) {
-        //
-        console.log('User does not exist ');
-        //redirect to /signup
         res.redirect(302, '/login');
       } else {
         if (models.Users.compare(req.body.password, result.password, result.salt)) {
@@ -121,8 +140,23 @@ app.post('/login', (req, res, next) => {
     })
     .catch((err) => {
       console.log('User does not exist    ', err);
-      //redirect to /signup
       res.redirect(302, '/login');
+    });
+});
+
+
+app.get('/logout', (req, res, next) => {
+
+  res.cookie('shortlyid', null);
+  models.Sessions.delete({hash: req.session.hash})
+    .then((data) => {
+      req.session.hash = null;
+      res.redirect(201, '/');
+    })
+
+    .catch((err) => {
+      console.log('Can\'t log out    ', err);
+      res.redirect(302, '/');
     });
 });
 

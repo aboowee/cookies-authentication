@@ -12,12 +12,78 @@ const Promise = require('bluebird');
 
 
 module.exports.createSession = (req, res, next) => {
+  let createNewSession = () => {
+    models.Sessions.create() //creates a new hash in session table
+      .then((data) => {
+        models.Sessions.get({id: data.insertId})
+          .then((data) => {
+            req.session = {hash: data.hash};
+            res.cookie('shortlyid', data.hash);
+            //TEST SUITE
+            models.Users.get({username: req.body.username})
+              .then((data) => {
+                if ((data !== undefined) && data.id) { //if username exists
+                  models.Sessions.update({hash: req.session.hash}, {userId: data.id}) //update the sessions table
+                    .then ((data)=>{
+                      //now that the sessions table and users table have a matching username id, the user is def logged in
+                      //now we should put that username in req.session.user = req.body.username
+                      req.session.user = true;
+                      next();
+                    })
+                    .catch((error) => {
+                      console.log('Could not update sessions table  ', error);
+                      next();
+                    });
+                } else {
+                  console.log('username was not found');
+                  next();
+                }
+              }) //TEST SUITE
+              .catch((error) => {
+                console.log('could not check if username exists ', error);
+              });
+          })
+          .catch((error) => {
+            console.log('Could not get data from sessions table:  ', error);
+            next();
+          });
+      });
+  };
+
+  if ((req.cookies === undefined) || !Object.keys(req.cookies).length) {
+    createNewSession();
+  } else {
+    //if there are cookies already
+    const hashValue = req.cookies.shortlyid;
+    models.Sessions.get({hash: hashValue})
+      .then ((data) => {
+        if (!data) {
+          createNewSession();
+        } else {
+          req.session = data;
+          next();
+        }
+      })
+      .catch ((error) => {
+        console.log('Could not get data from sessions table:  ', error);
+        req.session = {hash: ''};
+        next();
+      });
+  }
+
+};
+
+/************************************************************/
+// Add additional authentication middleware functions below
+/************************************************************/
+
+/* module.exports.createSession = (req, res, next) => {
   console.log('the name is: ', req.body.username);
 
   let createNewSession = () => {
     models.Sessions.create() //creates a new hash in session table
       .then((data) => {
-        console.log('entered new session');
+        console.log('entered new session with ', req.body.username);
         models.Sessions.get({id: data.insertId})
           .then((data) => {
             req.session = {hash: data.hash};
@@ -39,6 +105,7 @@ module.exports.createSession = (req, res, next) => {
                       next();
                     });
                 } else {
+                  console.log('username was not found');
                   next();
                 }
               }) //TEST SUITE
@@ -75,8 +142,4 @@ module.exports.createSession = (req, res, next) => {
       });
   }
 
-};
-
-/************************************************************/
-// Add additional authentication middleware functions below
-/************************************************************/
+}; */
