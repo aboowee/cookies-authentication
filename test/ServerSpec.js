@@ -190,6 +190,46 @@ describe('', function() {
       });
     });
 
+    it('redirects to signup if the password is not inserted', function(done) {
+      var options = {
+        'method': 'POST',
+        'uri': 'http://127.0.0.1:4568/signup',
+        'json': {
+          'username': 'John',
+          'password': ''
+        }
+      };
+
+      request(options, function(error, res, body) {
+        if (error) { return done(error); }
+        request(options, function(err, response, resBody) {
+          if (err) { return done(err); }
+          expect(response.headers.location).to.equal('/signup');
+          done();
+        });
+      });
+    });
+
+    it('redirects to signup if login is not inserted', function(done) {
+      var options = {
+        'method': 'POST',
+        'uri': 'http://127.0.0.1:4568/signup',
+        'json': {
+          'username': '',
+          'password': ''
+        }
+      };
+
+      request(options, function(error, res, body) {
+        if (error) { return done(error); }
+        request(options, function(err, response, resBody) {
+          if (err) { return done(err); }
+          expect(response.headers.location).to.equal('/signup');
+          done();
+        });
+      });
+    });
+
     it('redirects to index after user is created', function(done) {
       var options = {
         'method': 'POST',
@@ -580,6 +620,14 @@ describe('', function() {
       });
     });
 
+    it('Redirects to login page if a user tries to access a page that does not exist', function(done) {
+      request('http://127.0.0.1:4568/doesnotexist', function(error, res, body) {
+        if (error) { return done(error); }
+        expect(res.req.path).to.equal('/login');
+        done();
+      });
+    });
+
     it('Redirects to login page if a user tries to access the create page and is not signed in', function(done) {
       request('http://127.0.0.1:4568/create', function(error, res, body) {
         if (error) { return done(error); }
@@ -762,4 +810,5 @@ describe('', function() {
       });
     });
   });
+
 });
