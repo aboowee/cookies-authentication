@@ -16,12 +16,9 @@ const parseCookies = (req, res, next) => {
       var pair = cookie.split('=');
       cookieResponse[pair[0]] = pair[1];
     });
-
-    req.cookies = cookieResponse;
   }
+  req.cookies = cookieResponse;
+  // console.log('This is cookies', cookieResponse);
   next();
 };
-
-//
-
 module.exports = parseCookies;

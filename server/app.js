@@ -9,22 +9,6 @@ const app = express();
 
 
 /******************************************************/
-//        HELPER FUNCTION FOR VERIFYSESSION
-/******************************************************/
-
-const verifySession = function (req, res, next) {
-  console.log('This is req: ', req);
-  console.log('This is res: ', res);
-  console.log('This is next: ', next);
-  if (models.Sessions.isLoggedIn({user: req.session.user})) {
-    next();
-  } else {
-    console.log('about to redirect');
-    res.redirect(302, '/login');
-  }
-};
-
-/******************************************************/
 //          Initialization of Express
 /******************************************************/
 
@@ -39,30 +23,26 @@ app.use(Auth.createSession);
 
 
 //https://stackoverflow.com/questions/31928417/chaining-multiple-pieces-of-middleware-for-specific-route-in-expressjs
-app.get('/',
-  (req, res) => {
-    verifySession(req, res, ()=>{ res.render('index'); });
-  });
+app.get('/', Auth.verifySession, (req, res) => {
+  res.render('index');
+});
 
-app.get('/create',
-  (req, res) => {
-    verifySession(req, res, ()=>{ res.render('index'); });
-  });
+app.get('/create', Auth.verifySession, (req, res) => {
+  res.render('index');
+});
 
-app.get('/links',
-  (req, res, next) => {
-    verifySession(req, res, ()=>{
-      models.Links.getAll()
-        .then(links => {
-          res.status(200).send(links);
-        })
-        .error(error => {
-          res.status(500).send(error);
-        });
+
+app.get('/links', Auth.verifySession, (req, res, next) => {
+  models.Links.getAll()
+    .then(links => {
+      res.status(200).send(links);
+    })
+    .error(error => {
+      res.status(500).send(error);
     });
-  });
+});
 
-app.post('/links',
+app.post('/links', Auth.verifySession,
   (req, res, next) => {
     var url = req.body.url;
     if (!models.Links.isValidUrl(url)) {
@@ -104,59 +84,71 @@ app.post('/links',
 
 /* Add routes to your Express server to process incoming POST requests. These routes should enable a user to register for a new account and for users to log in to your application. Take a look at the login.ejs and signup.ejs templates in the views directory to determine which routes you need to add. */
 
-app.post('/signup', (req, res, next) => {
-
-  models.Users.create(req.body)
-    .then((result)=> {
-      models.Users.getAll()
-        .then((result) => {
-          Auth.createSession(req, res, res.redirect.bind(res, 201, '/'));
-        });
-    })
-    .catch((err) => {
-      console.log('User NOT Created    ', err);
-      res.redirect(302, '/signup');
-    });
-
+app.get('/login', (req, res) => {
+  res.render('login');
 });
 
+app.get('/signup', (req, res) => {
+  res.render('signup');
+});
+
+app.post('/signup', (req, res, next) => {
+//check for user
+  //if exists, redirect to /signup
+//Create a user
+//Upgrade session / addosciate with user
+//Redirect to / route
+  models.Users.get({username: req.body.username})
+    .then ((user) => {
+      if (user) {
+        throw user;
+      }
+      return models.Users.create({username: req.body.username, password: req.body.password});
+    })
+    .then (results => {
+      return models.Sessions.update({ hash: req.session.hash }, { userId: results.insertId });
+    })
+    .then(user => {
+      res.redirect('/');
+    })
+    .catch(user => {
+      res.redirect('/signup');
+    });
+});
 
 app.post('/login', (req, res, next) => {
-  console.log(' at app.post/login');
+  //find user by username
+  //if !found or !valid password
+  //redirect to /login
+  //otherwise
+  //redirecto to /
 
   models.Users.get({username: req.body.username})
-    .then((result)=> {
-      if (result === undefined) {
-        res.redirect(302, '/login');
-      } else {
-        if (models.Users.compare(req.body.password, result.password, result.salt)) {
-          console.log('Logging In');
-          res.redirect(201, '/');
-        } else {
-          console.log('Invalid Login');
-          res.redirect(302, '/login');
-        }
+    .then((user)=> {
+      if (!user || !models.Users.compare(req.body.password, user.password, user.salt)) {
+        throw user;
       }
+      return models.Sessions.update({hash: req.session.hash}, {userId: user.insertId});
     })
-    .catch((err) => {
-      console.log('User does not exist    ', err);
-      res.redirect(302, '/login');
+    .then(() => {
+      res.redirect('/');
+    })
+    .catch(() => {
+      res.redirect('/login');
     });
+
 });
 
 
 app.get('/logout', (req, res, next) => {
-
-  res.cookie('shortlyid', null);
-  models.Sessions.delete({hash: req.session.hash})
-    .then((data) => {
-      req.session.hash = null;
-      res.redirect(201, '/');
+  return models.Sessions.delete({hash: req.session.hash})
+    .then(() => {
+      res.clearCookie('shortlyid');
+      res.redirect('/login');
     })
-
     .catch((err) => {
       console.log('Can\'t log out    ', err);
-      res.redirect(302, '/');
+      res.status(500).send(err);
     });
 });
 
